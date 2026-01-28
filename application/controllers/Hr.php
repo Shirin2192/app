@@ -350,7 +350,7 @@ class Hr extends CI_Controller {
     }
 
     /**
-     * 4️⃣ HR / Management Reject
+     *  HR / Management Reject
      */
     public function reject()
     {
@@ -383,7 +383,7 @@ class Hr extends CI_Controller {
     }
 
     /**
-     * 5️⃣ Utility: JSON response
+     *  Utility: JSON response
      */
     private function _json($status, $message, $data = [])
     {

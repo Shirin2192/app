@@ -94,7 +94,7 @@ class Salary_advance_model extends CI_Model
         }
 
         // Attendance (replace with HRMS integration)
-        $attendance = $this->get_attendance_summary($employee_id);
+        $attendance = $this->get_attendance_summary($employee_id, $application_date);
 
         //  HARD STOP: Late marks rule
         if (!is_late_mark_eligible($attendance['late_marks'])) {
@@ -104,9 +104,12 @@ class Salary_advance_model extends CI_Model
             ];
         }
 
-        //  Date window rule (till 22nd)
-        if (date('j', strtotime($application_date)) > 22) {
-            return ['eligible' => false, 'reason' => 'Advance allowed only till 22nd'];
+        // Date window rule: 15th–22nd
+        if (!is_within_advance_date_window($application_date)) {
+            return [
+                'eligible' => false,
+                'reason' => 'Advance application allowed only from 15th to 22nd'
+            ];
         }
 
         //  Salary cap rule
@@ -152,11 +155,39 @@ class Salary_advance_model extends CI_Model
     /**
      * Attendance summary (mock)
      */
-    private function get_attendance_summary($employee_id)
+    private function get_attendance_summary($employee_id, $application_date = null)
     {
+        if (!$application_date) {
+            $application_date = date('Y-m-d');
+        }
+
+        // First day of month
+        $month_start = date('Y-m-01', strtotime($application_date));
+
+        // ----- UNPAID LEAVES -----
+        $this->db->select('COUNT(*) AS unpaid_leave');
+        $this->db->from('tbl_attendance');
+        $this->db->where('employee_id', $employee_id);
+        $this->db->where('attendance_date >=', $month_start);
+        $this->db->where('attendance_date <=', $application_date);
+        $this->db->where('status', 'Absent');
+        $this->db->where('is_paid_leave', 0);
+
+        $unpaid_leave = $this->db->get()->row()->unpaid_leave ?? 0;
+
+        // ----- LATE MARKS -----
+        $this->db->select('COUNT(*) AS late_marks');
+        $this->db->from('tbl_attendance');
+        $this->db->where('employee_id', $employee_id);
+        $this->db->where('attendance_date >=', $month_start);
+        $this->db->where('attendance_date <=', $application_date);
+        $this->db->where('late_mark', 1);
+
+        $late_marks = $this->db->get()->row()->late_marks ?? 0;
+
         return [
-            'unpaid_leave' => 1,
-            'late_marks' => 2
+            'unpaid_leave' => (int) $unpaid_leave,
+            'late_marks'   => (int) $late_marks
         ];
     }
 
@@ -206,7 +237,5 @@ class Salary_advance_model extends CI_Model
 
         $this->db->trans_complete();
         return $this->db->trans_status();
-    }
-
-
+    }    
 }

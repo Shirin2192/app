@@ -1,6 +1,14 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
+
+function is_within_advance_date_window($application_date, $from = 15, $to = 22, $override = false)
+    {
+        if ($override) return true;
+
+        $day = (int) date('j', strtotime($application_date));
+        return ($day >= $from && $day <= $to);
+    }
 /**
  * Days elapsed till application date
  */
