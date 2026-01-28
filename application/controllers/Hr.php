@@ -246,7 +246,6 @@ class Hr extends CI_Controller {
 
         $data = [];
         $count = 1;
-
         foreach ($rows as $row) {
             $data[] = [
                 'sr_no'            => $count++,
