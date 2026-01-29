@@ -265,60 +265,6 @@ class Hr extends CI_Controller {
 		$id = $this->input->post('id');
 		$data = $this->Salary_advance_model->get_advance_salary_details_on_id($id);
 	}
-
-	/**
-     * Check advance eligibility & calculation
-     * AJAX/API
-     */
-    public function check_eligibility()
-    {
-        $employee_id = $this->input->post('employee_id');
-        $application_date = date('Y-m-d');
-
-        if (empty($employee_id)) {
-            return $this->_json(false, 'Employee ID is required');
-        }
-
-        $result = $this->Salary_advance_model
-                       ->calculate_advance_salary($employee_id, $application_date);
-
-        if (!$result['eligible']) {
-            return $this->_json(false, $result['reason']);
-        }
-
-        return $this->_json(true, 'Eligible for advance', $result);
-    }
-
-    /**
-     * Apply for advance salary
-     */
-    public function apply()
-    {
-        $data = [
-            'fk_employee_id'   => $this->input->post('employee_id'),
-            'advance_amount'   => $this->input->post('advance_amount'),
-            'reason'           => $this->input->post('reason'),
-            'request_date'     => date('Y-m-d'),
-            'required_by'      => $this->input->post('required_by'),
-            'repayment_months' => $this->input->post('repayment_months'),
-            'monthly_deduction'=> $this->input->post('monthly_deduction')
-        ];
-
-        if (empty($data['fk_employee_id']) || empty($data['advance_amount'])) {
-            return $this->_json(false, 'Invalid request data');
-        }
-
-        $advance_id = $this->Salary_advance_model->apply_advance($data);
-
-        if ($advance_id) {
-            return $this->_json(true, 'Advance request submitted', [
-                'advance_id' => $advance_id
-            ]);
-        }
-
-        return $this->_json(false, 'Failed to submit advance request');
-    }
-
     /**
      * HR / Management Approve
      */

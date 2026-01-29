@@ -5,7 +5,6 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 function is_within_advance_date_window($application_date, $from = 15, $to = 22, $override = false)
     {
         if ($override) return true;
-
         $day = (int) date('j', strtotime($application_date));
         return ($day >= $from && $day <= $to);
     }
@@ -59,7 +58,6 @@ function calculate_total_deductions($per_day_salary, $unpaid_leave, $late_marks)
     $unpaid_deduction = $unpaid_leave * $per_day_salary;
     $late_penalty_days = late_marks_to_penalty_days($late_marks);
     $late_deduction = $late_penalty_days * $per_day_salary;
-
     return round($unpaid_deduction + $late_deduction, 2);
 }
 
@@ -71,12 +69,14 @@ function calculate_eligible_earned($earned_salary, $deductions)
     $eligible = $earned_salary - $deductions;
     return $eligible > 0 ? round($eligible, 2) : 0;
 }
-
 /**
  * Maximum advance allowed
  * 80% of eligible earned, rounded down to nearest 100
  */
 function calculate_max_advance($eligible_earned, $percentage = 80)
 {
+    if ($eligible_earned <= 0) {
+        return 0;
+    }
     return floor((($eligible_earned * $percentage) / 100) / 100) * 100;
 }

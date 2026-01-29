@@ -87,32 +87,84 @@ class Employee extends CI_Controller {
 	    }
 	}
 
-	public function apply_salary_advance()
-	{
-	    $this->form_validation->set_rules('advance_amount', 'Advance Amount', 'required|numeric');    
+	// public function apply_salary_advance()
+	// {
+	//     $this->form_validation->set_rules('advance_amount', 'Advance Amount', 'required|numeric');    
 
-	    if ($this->form_validation->run() == FALSE) {
-	        echo json_encode([
-	            'status' => 'error',
-	            'errors' => $this->form_validation->error_array()
-	        ]);
-	        return;
-	    }
+	//     if ($this->form_validation->run() == FALSE) {
+	//         echo json_encode([
+	//             'status' => 'error',
+	//             'errors' => $this->form_validation->error_array()
+	//         ]);
+	//         return;
+	//     }
 
-	    $amount   = $this->input->post('advance_amount');	    
-	    $data = [
-	        'fk_employee_id'     => $this->session->userdata('employee_session')['employee_id'],
-	        'advance_amount'     => $amount,
-	        'reason'             => $this->input->post('reason'),
-	        'request_date'       => date('Y-m-d'),
-	        'required_by'        => $this->input->post('required_by'),	        
-	        'status'             => 'Pending'
-	    ];
+	//     $amount   = $this->input->post('advance_amount');	    
+	//     $data = [
+	//         'fk_employee_id'     => $this->session->userdata('employee_session')['employee_id'],
+	//         'advance_amount'     => $amount,
+	//         'reason'             => $this->input->post('reason'),
+	//         'request_date'       => date('Y-m-d'),
+	//         'required_by'        => $this->input->post('required_by'),	        
+	//         'status'             => 'Pending'
+	//     ];
 
-	    $this->model->insertData('tbl_salary_advances', $data);
-	    echo json_encode([
-	        'status' => 'success',
-	        'message' => 'Salary advance request submitted'
-	    ]);
-	}
+	//     $this->model->insertData('tbl_salary_advances', $data);
+	//     echo json_encode([
+	//         'status' => 'success',
+	//         'message' => 'Salary advance request submitted'
+	//     ]);
+	// }
+
+	/**
+     * Check advance eligibility & calculation
+     * AJAX/API
+     */
+    public function check_eligibility()
+    {
+        $employee_id = $this->input->post('employee_id');
+        $application_date = date('Y-m-d');
+        
+
+        if (empty($employee_id)) {
+            return $this->_json(false, 'Employee ID is required');
+        }
+
+        $result = $this->Salary_advance_model
+                       ->calculate_advance_salary($employee_id, $application_date);
+
+        if (!$result['eligible']) {
+            return $this->_json(false, $result['reason']);
+        }
+
+        return $this->_json(true, 'Eligible for advance', $result);
+    }
+	/**
+     * Apply for advance salary
+     */
+    public function apply_salary_advance()
+    {
+        $data = [
+            'fk_employee_id'   => $this->input->post('employee_id'),
+            'advance_amount'   => $this->input->post('advance_amount'),
+            'reason'           => $this->input->post('reason'),
+            'request_date'     => date('Y-m-d'),
+            'required_by'      => $this->input->post('required_by'),
+            'repayment_months' => $this->input->post('repayment_months'),
+            'monthly_deduction'=> $this->input->post('monthly_deduction')
+        ];
+
+        if (empty($data['fk_employee_id']) || empty($data['advance_amount'])) {
+            return $this->_json(false, 'Invalid request data');
+        }
+
+        $advance_id = $this->Salary_advance_model->apply_advance($data);
+
+        if ($advance_id) {
+            return $this->_json(true, 'Advance request submitted', [
+                'advance_id' => $advance_id
+            ]);
+        }
+        return $this->_json(false, 'Failed to submit advance request');
+    }
 }
